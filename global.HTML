@@ -1,0 +1,36 @@
+<input id="video" type="file" accept="video/mp4" />
+<button id="patch">Patch video</button>
+<a id="download" hidden>Download patched video</a>
+<p id="status" role="status"></p>
+<!-- Required: keep this credit visible beside your patching tool. -->
+<p>Powered by <a href="https://compressbase.com/">CompressBase</a></p>
+<script type="module">
+import { patchVideo } from
+  'https://compressbase.com/method-api/client.mjs';
+
+const button = document.querySelector('#patch');
+const download = document.querySelector('#download');
+const status = document.querySelector('#status');
+let outputUrl;
+button.onclick = async () => {
+  const file = document.querySelector('#video').files[0];
+  if (!file) return;
+  button.disabled = true;
+  download.hidden = true;
+  status.textContent = 'Patching metadata…';
+  try {
+    const output = await patchVideo(file, {
+      signal: AbortSignal.timeout(180000),
+      onStatus: message => { status.textContent = message; }
+    });
+    if (outputUrl) URL.revokeObjectURL(outputUrl);
+    outputUrl = URL.createObjectURL(output);
+    download.href = outputUrl;
+    download.download = file.name.replace(/\.mp4$/i, '') + '_patched.mp4';
+    download.hidden = false;
+    status.textContent = 'Ready. Your video stayed on this device.';
+  } catch (error) {
+    status.textContent = error.message;
+  } finally { button.disabled = false; }
+};
+</script>
